@@ -15,6 +15,16 @@ const SIGNATURE_OPTIONS: SignatureOptions = SignatureOptions {
 #[macro_use]
 extern crate napi_derive;
 
+/// Calculate signature of a file.
+#[napi]
+pub fn signature(src: String) -> Result<Buffer> {
+  let data = std::fs::read(src).map_err(|e| Error::from_reason(e.to_string()))?;
+
+  let signature = Signature::calculate(&data, SIGNATURE_OPTIONS);
+
+  Ok(signature.into_serialized().into())
+}
+
 /// Calculate the diff between two files.
 #[napi]
 pub fn diff_files(a: String, b: String) -> Result<Buffer> {
@@ -29,16 +39,6 @@ pub fn diff_files(a: String, b: String) -> Result<Buffer> {
   let data = std::fs::read(b).map_err(|e| Error::from_reason(e.to_string()))?;
 
   diff(sig.into(), data.into())
-}
-
-/// Calculate signature of a file.
-#[napi]
-pub fn signature(src: String) -> Result<Buffer> {
-  let data = std::fs::read(src).map_err(|e| Error::from_reason(e.to_string()))?;
-
-  let signature = Signature::calculate(&data, SIGNATURE_OPTIONS);
-
-  Ok(signature.into_serialized().into())
 }
 
 /// Calculate the diff between a file signature and the raw data.
@@ -56,7 +56,7 @@ pub fn diff(signature: Buffer, buf: Buffer) -> Result<Buffer> {
   Ok(out.into())
 }
 
-/// Apply
+/// Apply the delta to a file.
 #[napi]
 pub fn patch_file(dest: String, delta: Buffer) -> Result<Buffer> {
   if !Path::new(&dest).exists() {
@@ -68,7 +68,7 @@ pub fn patch_file(dest: String, delta: Buffer) -> Result<Buffer> {
   apply(data.into(), delta)
 }
 
-/// Apply
+/// Apply the delta to a Buffer.
 #[napi]
 pub fn apply(data: Buffer, delta: Buffer) -> Result<Buffer> {
   let data: Vec<u8> = data.into();

@@ -1,8 +1,12 @@
 {
   "name": "fast-rsync-rs",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "index.js",
   "types": "index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mrexox/fast-rsync-rs"
+  },
   "napi": {
     "name": "fast-rsync-rs",
     "triples": {
