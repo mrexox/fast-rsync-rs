@@ -27,10 +27,11 @@ test('using a temporary signature file', (t) => {
   let sigFilename = tmpWrite(sig)
   sig = readFileSync(sigFilename)
 
-  let delta = diff(sig, readFileSync(FILE_EDITED))
+  const dest = readFileSync(FILE_EDITED)
+  let delta = diff(sig, dest)
 
   const source = readFileSync(FILE)
   let resultBuf = apply(source, delta)
 
-  t.is(Buffer.compare(resultBuf, readFileSync(FILE_EDITED)), 0)
+  t.is(Buffer.compare(resultBuf, dest), 0)
 })
