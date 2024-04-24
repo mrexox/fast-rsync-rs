@@ -68,4 +68,5 @@ This project is licensed under [the Apache-2.0
 license](http://www.apache.org/licenses/LICENSE-2.0).
 
 Copyright (c) 2019 Dropbox, Inc.
+
 Copyright (c) 2016 bacher09, Artyom Pavlov (RustCrypto/hashes/MD4).
