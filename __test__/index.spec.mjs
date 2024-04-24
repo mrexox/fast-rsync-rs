@@ -3,11 +3,10 @@ import path from 'node:path'
 import os from 'node:os'
 import test from 'ava'
 
-import { diff, diffFiles, signature, patchFile, apply } from '../index.js'
+import { diff, diffFiles, fileSignature, signature, patchFile, apply } from '../index.js'
 
 const FILE = '__test__/binary.dat'
 const FILE_EDITED = '__test__/binary.dat.edited'
-
 
 function tmpWrite(data) {
   let filename = path.join(mkdtempSync(path.join(os.tmpdir(), 'test-')), 'test-file')
@@ -16,22 +15,32 @@ function tmpWrite(data) {
 }
 
 test('calculates the correct diff', (t) => {
-  let delta = diffFiles(FILE, FILE_EDITED)
-  let resultBuf = patchFile(FILE, delta)
+  const delta = diffFiles(FILE, FILE_EDITED)
+  const resultBuf = patchFile(FILE, delta)
 
   t.is(Buffer.compare(resultBuf, readFileSync(FILE_EDITED)), 0)
 })
 
-test('using a temporary signature file', (t) => {
-  let sig = signature(FILE)
-  let sigFilename = tmpWrite(sig)
+test('uses a temporary signature file', (t) => {
+  let sig = fileSignature(FILE)
+  const sigFilename = tmpWrite(sig)
   sig = readFileSync(sigFilename)
 
   const dest = readFileSync(FILE_EDITED)
-  let delta = diff(sig, dest)
+  const delta = diff(sig, dest)
 
   const source = readFileSync(FILE)
-  let resultBuf = apply(source, delta)
+  const resultBuf = apply(source, delta)
 
   t.is(Buffer.compare(resultBuf, dest), 0)
+})
+
+test('uses custom options', (t) => {
+  const source = readFileSync(FILE)
+  const dest = readFileSync(FILE_EDITED)
+  const sig = signature(source, { blockSize: 512, cryptoHashSize: 8 })
+
+  const delta = diff(sig, dest)
+
+  t.is(Buffer.compare(apply(source, delta), dest), 0)
 })

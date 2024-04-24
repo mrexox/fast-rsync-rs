@@ -1,26 +1,48 @@
 #![deny(clippy::all)]
 
-use napi::bindgen_prelude::*;
-
-use std::path::Path;
-
 use fast_rsync::{Signature, SignatureOptions};
-
-const LIMIT: usize = 4294967296;
-const SIGNATURE_OPTIONS: SignatureOptions = SignatureOptions {
-  block_size: 1024,
-  crypto_hash_size: 8,
-};
+use napi::bindgen_prelude::*;
+use std::path::Path;
 
 #[macro_use]
 extern crate napi_derive;
 
+const LIMIT: usize = 4294967296; // 4GBi
+const DEFAULT_OPTIONS: Options = Options {
+  block_size: 1024,
+  crypto_hash_size: 8,
+};
+
+/// Signature options.
+#[derive(Copy, Clone, Debug)]
+#[napi(object, js_name = "SignatureOptions")]
+pub struct Options {
+  /// The granularity of the signature.
+  /// Smaller block sizes yield larger, but more precise, signatures.
+  pub block_size: u32,
+  /// The number of bytes to use from the MD4 hash. Must be at most 16.
+  /// The larger this is, the less likely that a delta will be mis-applied.
+  pub crypto_hash_size: u32,
+}
+
 /// Calculate signature of a file.
 #[napi]
-pub fn signature(src: String) -> Result<Buffer> {
+pub fn file_signature(src: String) -> Result<Buffer> {
   let data = std::fs::read(src).map_err(|e| Error::from_reason(e.to_string()))?;
 
-  let signature = Signature::calculate(&data, SIGNATURE_OPTIONS);
+  signature(data.into(), DEFAULT_OPTIONS)
+}
+
+/// Calculates a signature of a Buffer.
+#[napi]
+pub fn signature(data: Buffer, options: Options) -> Result<Buffer> {
+  let signature = Signature::calculate(
+    &data,
+    SignatureOptions {
+      block_size: options.block_size,
+      crypto_hash_size: options.crypto_hash_size,
+    },
+  );
 
   Ok(signature.into_serialized().into())
 }
@@ -35,7 +57,7 @@ pub fn diff_files(a: String, b: String) -> Result<Buffer> {
     return Err(Error::from_reason(format!("file {b} does not exist")));
   }
 
-  let sig = signature(a)?;
+  let sig = file_signature(a)?;
   let data = std::fs::read(b).map_err(|e| Error::from_reason(e.to_string()))?;
 
   diff(sig.into(), data.into())
